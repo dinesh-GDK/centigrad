@@ -22,3 +22,17 @@ class FullyConnected:
 
     def parameters(self):
         return [self._weight.parameters(), self._bias.parameters()]
+    
+class Conv2d:
+    def __init__(self, ksize=(3, 3)):
+        self._filter = Tensor(np.random.uniform(low=-1., high=1., size=ksize)/np.sqrt(ksize[0]*ksize[1]))
+
+    def __call__(self, x):
+        return Tensor.conv2d(x, self._filter)
+    
+    def shape(self):
+        print(f"Kernel; {self._filter.shape}")
+
+    def parameters(self):
+        return [self._filter.parameters()]
+

@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import convolve2d
 
 class Tensor:
     def __init__(self, data, prev=()):
@@ -65,6 +66,21 @@ class Tensor:
         out._backward = _backward
 
         return out
+    
+    def conv2d(self, other):
+        # self -> input, other -> filter
+        # right always has stride one and padding 1
+        other = other if isinstance(other, Tensor) else Tensor(other)
+
+        out = Tensor(convolve2d(self.data, other.data, mode="same"), (self, other))
+
+        def _backward():
+            self.grad += convolve2d(self.data, out.grad, mode="same")
+            other.grad += convolve2d(np.flipud(np.fliplr(other.data)), out.grad, mode="valid")
+        out._backward = _backward
+
+        return out
+
 
     def backward(self):
 
