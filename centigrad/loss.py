@@ -2,7 +2,17 @@ import numpy as np
 
 from .tensor import Tensor        
 
-def mse(output, label):
+def mse(output: Tensor, label: Tensor):
+    """
+    Mean squared error loss
+
+    Args:
+        output (Tensor): output tensor
+        label (Tensor): label tensor
+
+    Returns:
+        Tensor: loss tensor
+    """
     out = Tensor(np.sum(label.data - output.data), (output, label))
 
     def _backward():
@@ -11,12 +21,22 @@ def mse(output, label):
 
     return out
 
-def cross_entropy(output, label):
+def cross_entropy(output: Tensor, label: Tensor):
+    """
+    Cross entropy loss
 
-    out = Tensor(-np.sum(label.data*np.log(output.data)), (output, label))
+    Args:
+        output (Tensor): output tensor
+        label (Tensor): label tensor
+
+    Returns:
+        Tensor: loss tensor
+    """
+    eps = 1e-6
+    out = Tensor(-np.sum(label.data*np.log(output.data + eps)), (output, label))
 
     def _backward():
-        output.grad += -label.data/output.data
+        output.grad += -label.data/(output.data + eps)
     out._backward = _backward
 
     return out
