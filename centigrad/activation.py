@@ -51,14 +51,14 @@ def softmax(tensor: Tensor) -> Tensor:
     Returns:
         Tensor: tensor of the Softmax layer
     """
-    exps = np.exp(tensor.data - np.max(tensor.data))
-    out = Tensor(exps / exps.sum(), (tensor,))
+    exps = np.exp(tensor.data.squeeze() - np.max(tensor.data, axis=-1, keepdims=True))
+    out = Tensor(exps / np.sum(exps, axis=-1, keepdims=True), (tensor,))
 
     def _backward():
-        s = out.data.reshape(-1, 1)
-        grad_matrix = np.diagflat(s) - np.dot(s, s.T)
-        tensor.grad += np.dot(out.grad, grad_matrix)
-
+        for i in range(out.shape[0]):
+            s = out.data[i].reshape(-1, 1)
+            grad_matrix = np.diagflat(s) - np.dot(s, s.T)
+            tensor.grad[i] += np.dot(out.grad[i], grad_matrix).squeeze()
     out._backward = _backward
 
     return out

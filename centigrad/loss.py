@@ -33,7 +33,7 @@ def cross_entropy(output: Tensor, label: Tensor):
         Tensor: loss tensor
     """
     eps = 1e-6
-    out = Tensor(-np.sum(label.data*np.log(output.data + eps)), (output, label))
+    out = Tensor(-np.sum(label.data*np.log(output.data + eps), axis=-1), (output, label))
 
     def _backward():
         output.grad += -label.data/(output.data + eps)

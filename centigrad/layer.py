@@ -164,8 +164,7 @@ class Conv2d(Layer):
         Returns:
             Tensor: output tensor
         """
-        x = Tensor.conv2d(x, self._filter)
-        return x
+        return Tensor.conv2d(x, self._filter)
     
     def shape(self) -> None:
         """
@@ -218,8 +217,7 @@ class MaxPool2d(Layer):
         Returns:
             Tensor: output tensor
         """
-        x = Tensor.maxpool2d(x, self._ksize)
-        return x
+        return Tensor.maxpool2d(x, self._ksize)
 
     def parameters(self) -> list[None]:
         """
@@ -233,7 +231,7 @@ class MaxPool2d(Layer):
         """
         return []
     
-class Dropout(Layer):
+class Dropout2d(Layer):
     def __init__(self, p=0.2):
         """
         Initialize the dropout layer
@@ -257,8 +255,7 @@ class Dropout(Layer):
         Returns:
             Tensor: output tensor
         """
-        x = Tensor.dropout(x, self._p, self.is_train)
-        return x
+        return Tensor.dropout2d(x, self._p, self.is_train)
 
     def parameters(self) -> list[None]:
         """
@@ -271,3 +268,55 @@ class Dropout(Layer):
             list[None]: empty list
         """
         return []
+    
+class BatchNorm2d(Layer):
+    """
+    Batch normalization layer
+    """
+    def __init__(self, channels):
+        """
+        Initialize the batch normalization layer
+
+        Args:
+            channels (int): number of channels
+
+        Returns:
+            None
+        """
+        super().__init__()
+        # gamma -> scale factor; beta -> shift factor
+        self._gamma = Tensor(np.ones((1, channels, 1, 1)))
+        self._beta = Tensor(np.zeros((1, channels, 1, 1)))
+        
+        # parameters used during inference (running metrics)
+        # number of samples seen so far
+        self.run = 0
+        # running mean and variance of the samples
+        self.run_mean = np.zeros((1, channels, 1, 1))
+        self.run_var = np.zeros((1, channels, 1, 1))
+
+    def __call__(self, x: Tensor) -> Tensor:
+        """
+        Apply the batch normalization layer on the input tensor
+
+        Args:
+            x (Tensor): input tensor
+
+        Returns:
+            Tensor: output tensor 
+        """
+        norm, self.run, self.run_mean, self.run_var =  \
+            Tensor.batchnorm2d(x, self._gamma, self._beta, self.is_train, self.run, self.run_mean, self.run_var)
+        return norm
+
+    def parameters(self) -> list[Tensor]:
+        """
+        Get the parameters of the layer
+
+        Args:
+            None
+
+        Returns:
+            list[Tensor]: list of parameters
+        """
+        return [self._gamma, self._beta]
