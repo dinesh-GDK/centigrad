@@ -1,9 +1,11 @@
 from .tensor import Tensor
 
+
 class Optimizer:
     """
     Base class for all optimizers
     """
+
     def __init__(self, params: list[Tensor], batch_size: int, lr: float):
         """
         Initialize the optimizer
@@ -51,11 +53,13 @@ class Optimizer:
             else:
                 raise ValueError(f"Unsupported param type: {type(param)}")
 
+
 class GradientDescent(Optimizer):
     """
     Gradient descent optimizer
     """
-    def __init__(self, params: list[Tensor], batch_size: int, lr: float=0.01) -> None:
+
+    def __init__(self, params: list[Tensor], batch_size: int, lr: float = 0.01) -> None:
         """
         Initialize the optimizer
 
@@ -80,4 +84,4 @@ class GradientDescent(Optimizer):
             None
         """
         for param in self.params:
-            param.data += -(self.lr/self.batch_size) * param.grad
+            param.data += -(self.lr / self.batch_size) * param.grad

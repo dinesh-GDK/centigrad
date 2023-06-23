@@ -2,6 +2,7 @@ import numpy as np
 
 from .tensor import Tensor
 
+
 def relu(tensor: Tensor) -> Tensor:
     """
     ReLU activation function
@@ -18,9 +19,11 @@ def relu(tensor: Tensor) -> Tensor:
 
     def _backward():
         tensor.grad += (out.data > 0) * out.grad
+
     out._backward = _backward
 
     return out
+
 
 def tanh(tensor: Tensor) -> Tensor:
     """
@@ -32,14 +35,16 @@ def tanh(tensor: Tensor) -> Tensor:
     Returns:
         Tensor: tensor of the Tanh layer
     """
-    t = (np.exp(2*tensor.data) - 1) / (np.exp(2*tensor.data) + 1)
+    t = (np.exp(2 * tensor.data) - 1) / (np.exp(2 * tensor.data) + 1)
     out = Tensor(t, (tensor,))
 
     def _backward():
         tensor.grad += (1 - out.data**2) * out.grad
+
     out._backward = _backward
 
     return out
+
 
 def softmax(tensor: Tensor) -> Tensor:
     """
@@ -59,6 +64,7 @@ def softmax(tensor: Tensor) -> Tensor:
             s = out.data[i].reshape(-1, 1)
             grad_matrix = np.diagflat(s) - np.dot(s, s.T)
             tensor.grad[i] += np.dot(out.grad[i], grad_matrix).squeeze()
+
     out._backward = _backward
 
     return out

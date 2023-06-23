@@ -4,11 +4,18 @@ from typing import Union
 import numpy as np
 from scipy.signal import convolve
 
+
 class Tensor:
     """
     Tensor class
     """
-    def __init__(self, data: Union[int, float, np.ndarray], prev: tuple[Tensor]=(), requires_grad: bool=True) -> None:
+
+    def __init__(
+        self,
+        data: Union[int, float, np.ndarray],
+        prev: tuple[Tensor] = (),
+        requires_grad: bool = True,
+    ) -> None:
         """
         Initialize the tensor
 
@@ -31,7 +38,7 @@ class Tensor:
             self.data = data
         else:
             raise ValueError(f"Unsupported data type: {type(data)}")
-        
+
         self.requires_grad = requires_grad
         if self.requires_grad:
             self.grad = np.zeros_like(self.data)
@@ -40,83 +47,96 @@ class Tensor:
         self.shape = self.data.shape
 
     def __add__(self, other: Union[int, float, np.ndarray]) -> Tensor:
-
         other = other if isinstance(other, Tensor) else Tensor(other)
         out = Tensor(self.data + other.data, (self, other))
 
         def _backward():
             self.grad += out.grad
             other.grad += np.sum(out.grad, axis=0)
+
         out._backward = _backward
 
         return out
 
     def __mul__(self, other: Union[int, float, np.ndarray]) -> Tensor:
-
         if isinstance(other, int) or isinstance(other, float):
             other = np.ones(self.data.shape) * other
 
         other = other if isinstance(other, Tensor) else Tensor(other)
-        
+
         out = Tensor(self.data * other.data, (self, other))
 
         def _backward():
             self.grad += other.data * out.grad
             other.grad += self.data * out.grad
+
         out._backward = _backward
 
         return out
-    
-    def __pow__(self, other: Union[int, float]) -> Tensor:
 
+    def __pow__(self, other: Union[int, float]) -> Tensor:
         assert isinstance(other, (int, float)), "only supporting int/float powers"
         out = Tensor(self.data**other, (self,))
 
         def _backward():
-            self.grad += (other * self.data**(other-1)) * out.grad
+            self.grad += (other * self.data ** (other - 1)) * out.grad
+
         out._backward = _backward
 
         return out
-    
-    def dot(self, other: Union[int, float, np.ndarray]):
 
+    def dot(self, other: Union[int, float, np.ndarray]):
         other = other if isinstance(other, Tensor) else Tensor(other)
         out = Tensor(np.dot(self.data, other.data), (self, other))
 
         def _backward():
             self.grad += np.dot(other.data, out.grad.squeeze().T).T
             other.grad += np.dot(self.data.T, out.grad)
+
         out._backward = _backward
 
         return out
-    
+
     def flatten(self) -> Tensor:
         """
         Flatten the tensor
-        """        
+        """
         initial_shape = self.data.shape
         out = Tensor(np.reshape(self.data, (initial_shape[0], -1)), (self,))
 
         def _backward():
             self.grad += np.reshape(out.grad, initial_shape)
+
         out._backward = _backward
 
         return out
-    
+
     def conv2d(self, other: Union[int, float, np.ndarray]) -> Tensor:
         """
         Convolve the tensor with a kernel
-        
+
         Note:
         always has stride 1 and padding 1 for now
         """
         other = other if isinstance(other, Tensor) else Tensor(other)
 
         assert self.shape[1] == other.shape[1], "number of channels must match"
-        assert other.shape[-1] % 2 == 1 and other.shape[-2] % 2 == 1, "only supporting odd kernel sizes"
+        assert (
+            other.shape[-1] % 2 == 1 and other.shape[-2] % 2 == 1
+        ), "only supporting odd kernel sizes"
 
         other = other if isinstance(other, Tensor) else Tensor(other)
-        out = Tensor(np.zeros((self.shape[0], other.shape[0], self.shape[-2] - 2*(other.shape[-2]//2), self.shape[-1] - 2*(other.shape[-1]//2))), (self, other))
+        out = Tensor(
+            np.zeros(
+                (
+                    self.shape[0],
+                    other.shape[0],
+                    self.shape[-2] - 2 * (other.shape[-2] // 2),
+                    self.shape[-1] - 2 * (other.shape[-1] // 2),
+                )
+            ),
+            (self, other),
+        )
         # TODO: remove for loop
         for i in range(self.shape[0]):
             for j in range(other.shape[0]):
@@ -126,65 +146,97 @@ class Tensor:
             # TODO: remove for loop
             for i in range(self.shape[0]):
                 for j in range(other.shape[0]):
-                    other.grad[j] += convolve(other.data[j][:, :, ::-1][:, ::-1, :], np.expand_dims(out.grad[i][j], axis=0), mode="same")
+                    other.grad[j] += convolve(
+                        other.data[j][:, :, ::-1][:, ::-1, :],
+                        np.expand_dims(out.grad[i][j], axis=0),
+                        mode="same",
+                    )
                 self.grad[i] += convolve(self.data[i], out.grad[i], mode="same")
+
         out._backward = _backward
 
         return out
-    
+
     def maxpool2d(self, ksize: tuple[int, int]) -> Tensor:
         """
         Maxpool the tensor
         """
-        out = Tensor(np.zeros((self.shape[0], self.shape[1], self.shape[2]//ksize[0], self.shape[3]//ksize[1])), (self,))
-        idx_max = np.zeros((self.shape[0], self.shape[-3] * (self.shape[-2]//ksize[-2]) * (self.shape[-1]//ksize[-1])))
+        out = Tensor(
+            np.zeros(
+                (
+                    self.shape[0],
+                    self.shape[1],
+                    self.shape[2] // ksize[0],
+                    self.shape[3] // ksize[1],
+                )
+            ),
+            (self,),
+        )
+        idx_max = np.zeros(
+            (
+                self.shape[0],
+                self.shape[-3]
+                * (self.shape[-2] // ksize[-2])
+                * (self.shape[-1] // ksize[-1]),
+            )
+        )
         for i in range(self.shape[0]):
-            slid = np.lib.stride_tricks.sliding_window_view(self.data[i], ksize, axis=(-2, -1))[:, ::ksize[0], ::ksize[1]]
+            slid = np.lib.stride_tricks.sliding_window_view(
+                self.data[i], ksize, axis=(-2, -1)
+            )[:, :: ksize[0], :: ksize[1]]
             out.data[i] = np.amax(slid, axis=(-1, -2))
-            idx_max[i] = slid.reshape(-1, ksize[0]*ksize[1]).argmax(axis=1)
+            idx_max[i] = slid.reshape(-1, ksize[0] * ksize[1]).argmax(axis=1)
 
         def _backward():
             _, m, n, _ = self.data.shape
             f = idx_max.shape[1]
             for i in range(self.shape[0]):
                 for k in range(len(idx_max[i])):
-                    x = k//(f//m)
-                    y = int(ksize[0]*((k%(f//m))//(n//ksize[0])) + idx_max[i][k]//ksize[0])
-                    z = int(ksize[1]*(k%(n//ksize[0])) + idx_max[i][k]%ksize[0])
-                    self.grad[i, x, y, z] += out.grad[i, x, (k%(f//m))//(n//ksize[0]), k%(n//ksize[0])]
+                    x = k // (f // m)
+                    y = int(
+                        ksize[0] * ((k % (f // m)) // (n // ksize[0]))
+                        + idx_max[i][k] // ksize[0]
+                    )
+                    z = int(ksize[1] * (k % (n // ksize[0])) + idx_max[i][k] % ksize[0])
+                    self.grad[i, x, y, z] += out.grad[
+                        i, x, (k % (f // m)) // (n // ksize[0]), k % (n // ksize[0])
+                    ]
+
         out._backward = _backward
 
         return out
-    
-    def dropout2d(self, p: float, is_train: bool=True) -> Tensor:
+
+    def dropout2d(self, p: float, is_train: bool = True) -> Tensor:
         """
         Dropout the tensor
         """
         if not is_train:
             return self
-        
+
         mask = np.zeros(self.data.shape)
         out = Tensor(np.zeros(self.data.shape), (self,))
 
         for i in range(self.data.shape[0]):
-            mask[i] = np.random.binomial(1, 1-p, size=self.data.shape[1:])
+            mask[i] = np.random.binomial(1, 1 - p, size=self.data.shape[1:])
             out.data[i] = self.data[i] * mask[i]
 
         def _backward():
             for i in range(self.data.shape[0]):
                 self.grad[i] += mask[i] * out.grad[i]
+
         out._backward = _backward
 
         return out
-    
+
     def batchnorm2d(
-            self,
-            gamma: Union[Tensor, float],
-            beta: Union[Tensor, float],
-            is_train: bool,
-            run: int,
-            run_mean: np.ndarray,
-            run_var: np.ndarray) -> Tensor:
+        self,
+        gamma: Union[Tensor, float],
+        beta: Union[Tensor, float],
+        is_train: bool,
+        run: int,
+        run_mean: np.ndarray,
+        run_var: np.ndarray,
+    ) -> Tensor:
         """
         Batch normalize the tensor
         """
@@ -201,12 +253,20 @@ class Tensor:
             run_var = run_var + (mean - run_mean) * (mean - temp)
             run_mean = temp
 
-        out = Tensor(gamma.data*(self.data - run_mean) / np.sqrt(run_var + eps) + beta.data, (self, gamma, beta))
+        out = Tensor(
+            gamma.data * (self.data - run_mean) / np.sqrt(run_var + eps) + beta.data,
+            (self, gamma, beta),
+        )
 
         def _backward():
             self.grad += out.grad * gamma.data
-            gamma.grad += np.sum(np.mean(out.grad * out.data, axis=(2, 3), keepdims=True), axis=0)
-            beta.grad += np.sum(np.mean(out.grad, axis=(2, 3), keepdims=True), axis=0, keepdims=True)
+            gamma.grad += np.sum(
+                np.mean(out.grad * out.data, axis=(2, 3), keepdims=True), axis=0
+            )
+            beta.grad += np.sum(
+                np.mean(out.grad, axis=(2, 3), keepdims=True), axis=0, keepdims=True
+            )
+
         out._backward = _backward
 
         return out, run, run_mean, run_var
@@ -217,12 +277,14 @@ class Tensor:
         """
         topo = []
         visited = set()
+
         def build_topo(v):
             if v not in visited:
                 visited.add(v)
                 for child in v._prev:
                     build_topo(child)
                 topo.append(v)
+
         build_topo(self)
 
         self.grad = np.array([1])
@@ -234,7 +296,7 @@ class Tensor:
         String representation of the tensor
         """
         return f"Tensor(data={self.data}, requires_grad={self.requires_grad})"
-    
+
     def parameters(self) -> Tensor:
         """
         Returns the parameters of the tensor
@@ -246,7 +308,7 @@ class Tensor:
         Returns the data of the tensor as a numpy array
         """
         return self.data.squeeze()
-    
+
     def __neg__(self):
         return self * -1
 

@@ -1,10 +1,12 @@
 from .layer import Layer
 from .tensor import Tensor
 
+
 class Model:
     """
     Base class for all models
     """
+
     def __init__(self):
         self.train()
 
@@ -32,7 +34,7 @@ class Model:
         """
         self.set_mode(True)
 
-    def inference(self ) -> None:
+    def inference(self) -> None:
         """
         Set the model to inference mode
 
@@ -69,7 +71,7 @@ class Model:
             Tensor: output tensor
         """
         return x
-    
+
     def parameters(self) -> list[Tensor]:
         """
         Get the parameters of the model

@@ -2,10 +2,12 @@ import numpy as np
 
 from .tensor import Tensor
 
+
 class Layer:
     """
     Base class for all layers
     """
+
     def __init__(self) -> None:
         """
         Initialize the layer
@@ -54,10 +56,12 @@ class Layer:
         """
         raise NotImplementedError
 
+
 class Flatten(Layer):
     """
     Flatten layer
     """
+
     def __init__(self):
         super().__init__()
 
@@ -72,7 +76,7 @@ class Flatten(Layer):
             Tensor: output tensor
         """
         return Tensor.flatten(x)
-    
+
     def parameters(self) -> list[None]:
         """
         Get the parameters of the layer
@@ -82,10 +86,12 @@ class Flatten(Layer):
         """
         return []
 
+
 class FullyConnected(Layer):
     """
     Fully connected layer
     """
+
     def __init__(self, dim_in: int, dim_out: int):
         """
         Initialize the fully connected layer
@@ -98,8 +104,12 @@ class FullyConnected(Layer):
             None
         """
         super().__init__()
-        self._weight = Tensor(np.random.normal(0, np.sqrt(2.0/dim_in), size=(dim_in, dim_out)))
-        self._bias = Tensor(np.random.normal(0, np.sqrt(2.0/dim_in), size=(1, dim_out)))
+        self._weight = Tensor(
+            np.random.normal(0, np.sqrt(2.0 / dim_in), size=(dim_in, dim_out))
+        )
+        self._bias = Tensor(
+            np.random.normal(0, np.sqrt(2.0 / dim_in), size=(1, dim_out))
+        )
 
     def __call__(self, x: Tensor) -> Tensor:
         """
@@ -136,9 +146,10 @@ class FullyConnected(Layer):
             list[Tensor]: list of parameters
         """
         return [self._weight.parameters(), self._bias.parameters()]
-    
+
+
 class Conv2d(Layer):
-    def __init__(self, channel_in: int, channel_out: int, ksize: tuple=(3, 3)):
+    def __init__(self, channel_in: int, channel_out: int, ksize: tuple = (3, 3)):
         """
         Initialize the convolution layer
 
@@ -152,8 +163,8 @@ class Conv2d(Layer):
         """
         super().__init__()
         kernel = np.random.randn(channel_out, channel_in, ksize[0], ksize[1])
-        self._filter = Tensor(kernel/np.sum(kernel))
-                            
+        self._filter = Tensor(kernel / np.sum(kernel))
+
     def __call__(self, x: Tensor) -> Tensor:
         """
         Apply the convolution layer on the input tensor
@@ -165,7 +176,7 @@ class Conv2d(Layer):
             Tensor: output tensor
         """
         return Tensor.conv2d(x, self._filter)
-    
+
     def shape(self) -> None:
         """
         Print the shape of the layer
@@ -190,11 +201,13 @@ class Conv2d(Layer):
         """
         return [self._filter.parameters()]
 
+
 class MaxPool2d(Layer):
     """
     Max pooling layer
     """
-    def __init__(self, ksize: tuple=(2, 2)):
+
+    def __init__(self, ksize: tuple = (2, 2)):
         """
         Initialize the max pooling layer
 
@@ -230,9 +243,10 @@ class MaxPool2d(Layer):
             list[None]: empty list
         """
         return []
-    
+
+
 class Dropout2d(Layer):
-    def __init__(self, p=0.2):
+    def __init__(self, p: float = 0.2):
         """
         Initialize the dropout layer
 
@@ -268,12 +282,14 @@ class Dropout2d(Layer):
             list[None]: empty list
         """
         return []
-    
+
+
 class BatchNorm2d(Layer):
     """
     Batch normalization layer
     """
-    def __init__(self, channels):
+
+    def __init__(self, channels: int):
         """
         Initialize the batch normalization layer
 
@@ -287,7 +303,7 @@ class BatchNorm2d(Layer):
         # gamma -> scale factor; beta -> shift factor
         self._gamma = Tensor(np.ones((1, channels, 1, 1)))
         self._beta = Tensor(np.zeros((1, channels, 1, 1)))
-        
+
         # parameters used during inference (running metrics)
         # number of samples seen so far
         self.run = 0
@@ -303,10 +319,17 @@ class BatchNorm2d(Layer):
             x (Tensor): input tensor
 
         Returns:
-            Tensor: output tensor 
+            Tensor: output tensor
         """
-        norm, self.run, self.run_mean, self.run_var =  \
-            Tensor.batchnorm2d(x, self._gamma, self._beta, self.is_train, self.run, self.run_mean, self.run_var)
+        norm, self.run, self.run_mean, self.run_var = Tensor.batchnorm2d(
+            x,
+            self._gamma,
+            self._beta,
+            self.is_train,
+            self.run,
+            self.run_mean,
+            self.run_var,
+        )
         return norm
 
     def parameters(self) -> list[Tensor]:
