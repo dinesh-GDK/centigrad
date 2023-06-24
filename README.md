@@ -7,6 +7,7 @@ Inspired by Andrej Karpathy's [micrograd](https://github.com/karpathy/micrograd)
 Unlike [micrograd](https://github.com/karpathy/micrograd) which uses scalars, **centigrad** uses vectors.
 
 ## Installation
+
 ```
 git clone https://github.com/dinesh-GDK/centigrad.git
 pip install -e centigrad
@@ -42,7 +43,7 @@ pip install -e centigrad
 
 ## Example
 
-Here is an example how a model is defined in ***centigrad***
+Here is an example of how a model is defined in ***centigrad***
 
 ```python
 class MnistNet(Model):
