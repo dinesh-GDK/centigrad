@@ -42,9 +42,13 @@ class Tensor:
         self.requires_grad = requires_grad
         if self.requires_grad:
             self.grad = np.zeros_like(self.data)
-            self._backward = lambda: None
+            # Can't use lambda function here because of the limitation of pickle
+            self._backward = self._default_backward
             self._prev = set(prev)
         self.shape = self.data.shape
+
+    def _default_backward(self) -> None:
+        return None
 
     def __add__(self, other: Union[int, float, np.ndarray]) -> Tensor:
         other = other if isinstance(other, Tensor) else Tensor(other)
