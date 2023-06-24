@@ -65,9 +65,7 @@ class MnistNet(Model):
         return x
 ```
 
-See [demo noteb](https://github.com/dinesh-GDK/centigrad/blob/main/demo.ipynb)
-
- for more details
+See [demo notebook](https://github.com/dinesh-GDK/centigrad/blob/main/demo.ipynb) for more details
 
 ## References
 
