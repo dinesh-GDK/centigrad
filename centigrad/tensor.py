@@ -245,22 +245,21 @@ class Tensor:
         Batch normalize the tensor
         """
         eps = 1e-5
-        run += self.data.shape[0]
-
-        mean = self.data.mean(axis=(0, 2, 3), keepdims=True)
-        var = self.data.var(axis=(0, 2, 3), keepdims=True)
 
         if is_train:
-            run_mean, run_var = mean, var
-        else:
+            mean = self.data.mean(axis=(0, 2, 3), keepdims=True)
+            var = self.data.var(axis=(0, 2, 3), keepdims=True)
+
+            run += 1
             temp = run_mean + (mean - run_mean) / run
             run_var = run_var + (mean - run_mean) * (mean - temp)
             run_mean = temp
 
-        out = Tensor(
-            gamma.data * (self.data - run_mean) / np.sqrt(run_var + eps) + beta.data,
-            (self, gamma, beta),
-        )
+            norm = (self.data - mean) / np.sqrt(var + eps)
+        else:
+            norm = (self.data - run_mean) / np.sqrt(run_var + eps)
+
+        out = Tensor(gamma.data * norm + beta.data, (self, gamma, beta))
 
         def _backward():
             self.grad += out.grad * gamma.data

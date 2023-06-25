@@ -305,9 +305,9 @@ class BatchNorm2d(Layer):
         self._beta = Tensor(np.zeros((1, channels, 1, 1)))
 
         # parameters used during inference (running metrics)
-        # number of samples seen so far
+        # number of batches seen so far
         self.run = 0
-        # running mean and variance of the samples
+        # running mean and variance of the batches seen so far
         self.run_mean = np.zeros((1, channels, 1, 1))
         self.run_var = np.zeros((1, channels, 1, 1))
 
